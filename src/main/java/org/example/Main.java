@@ -8,6 +8,21 @@ import java.sql.Connection;
 import java.util.Scanner;
 
 public class Main {
+    // since the pin is repeated make it a function for cleaner code
+    private static boolean isAllowed(ConnectDB connectDB, Scanner scanner, String accountName, boolean allowed) {
+        for (int i = 1; i <= 3; i++) {
+            System.out.print("Input Pin: ");
+            int accPin = scanner.nextInt();
+            if (!connectDB.authClient(accountName, String.valueOf(accPin))) {
+                System.out.println("== Wrong pin, try again! ==");
+            } else {
+                allowed = true;
+                break;
+            }
+        }
+        return allowed;
+    }
+
     public static void main(String[] args) {
         //init required data
         boolean isActive = true;
@@ -165,21 +180,5 @@ public class Main {
 
         scanner.close();
         connectDB.closeConnection();
-    }
-
-    
-    // since the pin is repeated make it a function for cleaner code
-    private static boolean isAllowed(ConnectDB connectDB, Scanner scanner, String accountName, boolean allowed) {
-        for (int i = 1; i <= 3; i++) {
-            System.out.print("Input Pin: ");
-            int accPin = scanner.nextInt();
-            if (!connectDB.authClient(accountName, String.valueOf(accPin))) {
-                System.out.println("== Wrong pin, try again! ==");
-            } else {
-                allowed = true;
-                break;
-            }
-        }
-        return allowed;
     }
 }
