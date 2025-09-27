@@ -4,7 +4,7 @@
 // Compiled via JDK 21 Temurin LTS
 
 package org.example;
-import java.sql.Connection;
+// import java.sql.Connection;
 import java.util.Scanner;
 
 public class Main {
@@ -26,10 +26,12 @@ public class Main {
     public static void main(String[] args) {
         //init required data
         boolean isActive = true;
+        boolean allowed;
         ConnectDB connectDB = new ConnectDB();
-        Connection connection = connectDB.getConnection();
+        // Connection connection = connectDB.getConnection();
         Scanner scanner = new Scanner(System.in);
         int prmpt; // prompt for welcome page
+        double amount;
 
         while (isActive) { //welcome/login page
             System.out.println();
@@ -72,14 +74,14 @@ public class Main {
                                         System.out.println();
                                         System.out.println("Withdrawal (must be divisible by 100)");
                                         System.out.print("Enter Amount: ");
-                                        double amount = scanner.nextDouble();
+                                        amount = scanner.nextDouble();
 
                                         if (amount <= 0 || amount % 100 != 0) {
                                             System.out.println("Amount must be greater than 0 and divisible by 100!");
                                             break;
                                         }
 
-                                        boolean allowed = false;
+                                        allowed = false;
                                         allowed = isAllowed(connectDB, scanner, accountName, allowed);
                                         if (allowed) {
                                             if (connectDB.withdraw(accountName, amount)) {

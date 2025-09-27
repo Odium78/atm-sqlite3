@@ -40,6 +40,39 @@ public class ConnectDB {
         }
     }
 
+    public boolean findClient(String username) {
+        String sql = "SELECT username FROM clients WHERE username = ?";
+        try (var pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            var rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("Error looking up client: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean authClient(String username, String pin) {
+        String sql = "SELECT * FROM clients WHERE username = ? AND pin = ?";
+        try (var pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, pin);
+            var rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return true;
+            } else {;
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("Error during authentication: " + e.getMessage());
+            return false;
+        }
+    }
+
     // money handling
     public boolean transfer(String fromUser, String toUser, double amount) {
         String withdrawSql = "UPDATE clients SET money = money - ? WHERE username = ? AND money >= ?";
@@ -133,39 +166,8 @@ public class ConnectDB {
         }
     }
 
-    public boolean findClient(String username) {
-        String sql = "SELECT username FROM clients WHERE username = ?";
-        try (var pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            var rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("Error looking up client: " + e.getMessage());
-            return false;
-        }
-    }
 
-    public boolean authClient(String username, String pin) {
-        String sql = "SELECT * FROM clients WHERE username = ? AND pin = ?";
-        try (var pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, username);
-            pstmt.setString(2, pin);
-            var rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return true;
-            } else {;
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("Error during authentication: " + e.getMessage());
-            return false;
-        }
-    }
-
+    // database
     public ConnectDB() {
         //System.out.println("Initializing Database..");
         String url = "jdbc:sqlite:clients.db";
