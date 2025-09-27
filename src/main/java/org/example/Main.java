@@ -40,12 +40,14 @@ public class Main {
             System.out.print("Select an option: ");
             prmpt = scanner.nextInt();
 
+            scanner.nextLine();
             switch(prmpt) {
-                case 1:
+                case 1: // login
                     System.out.println();
                     System.out.println("ReliableBankingSystem | Login");
                     System.out.print("Input Account Name: ");
-                    String accountName = scanner.next();
+                    String accountNameDef = scanner.nextLine();
+                    String accountName = accountNameDef.toLowerCase();
                     if (connectDB.findClient(accountName)) {
                         boolean loggedIn = false;
                         loggedIn = isAllowed(connectDB, scanner, accountName, loggedIn);
@@ -58,13 +60,15 @@ public class Main {
                                 System.out.println("[2] Deposit");
                                 System.out.println("[3] Balance");
                                 System.out.println("[4] Transfer");
-                                System.out.println("[5] Exit");
+                                System.out.println("[5] Delete Account");
+                                System.out.println("[6] Exit");
                                 System.out.print("Select an option: ");
                                 int logprmpt = scanner.nextInt(); // prompt number for withdraw deposit balance transfer exit
                                 char trnprmpt; // prompt for yes or no [y][n]
 
+                                scanner.nextLine();
                                 switch (logprmpt) {
-                                    case 1:
+                                    case 1: //withdrawal
                                         System.out.println();
                                         System.out.println("Withdrawal (must be divisible by 100)");
                                         System.out.print("Enter Amount: ");
@@ -78,17 +82,16 @@ public class Main {
                                         boolean allowed = false;
                                         allowed = isAllowed(connectDB, scanner, accountName, allowed);
                                         if (allowed) {
-                                            connectDB.withdraw(accountName, amount);
-                                            System.out.println("You have successfully withdrawn amount of: " + amount);
-                                            System.out.println("Your new balance: " + connectDB.getBal(accountName));
-                                            System.out.print("Do you want another transaction? [Y][N]: ");
-                                            trnprmpt = scanner.next().charAt(0);
-                                            loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
-                                        }else {
-                                            System.out.println("Too many failed attempts. Withdrawal Denied.");
-                                        }
+                                            if (connectDB.withdraw(accountName, amount)) {
+                                                System.out.println("You have successfully withdrawn amount of: " + amount);
+                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.print("Do you want another transaction? [Y][N]: ");
+                                                trnprmpt = scanner.next().charAt(0);
+                                                loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
+                                            } else { System.out.println("Balance Error! Withdraw Failed, no changes made"); }
+                                        }else { System.out.println("Too many failed attempts. Withdrawal Denied."); }
                                         break;
-                                    case 2:
+                                    case 2: //deposit
                                         System.out.println();
                                         System.out.println("Deposit");
                                         System.out.print("Enter Amount: ");
@@ -97,47 +100,56 @@ public class Main {
                                         allowed = isAllowed(connectDB, scanner, accountName, allowed);
 
                                         if (allowed) {
-                                            connectDB.deposit(accountName, amount);
-                                            System.out.println("You have successfully deposited amount of: " + amount);
-                                            System.out.println("Your new balance: " + connectDB.getBal(accountName));
-                                            System.out.print("Do you want another transaction? [Y][N]: ");
-                                            trnprmpt = scanner.next().charAt(0);
-                                            loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
-                                        }else {
-                                            System.out.println("Too many failed attempts. Deposit Denied.");
-                                        }
+                                            if (connectDB.deposit(accountName, amount)) {
+                                                System.out.println("You have successfully deposited amount of: " + amount);
+                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.print("Do you want another transaction? [Y][N]: ");
+                                                trnprmpt = scanner.next().charAt(0);
+                                                loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
+                                            } else { System.out.println("Deposit Denied, no Changes Made."); }
+                                        }else { System.out.println("Too many failed attempts. Deposit Denied."); }
                                         break;
-                                    case 3:
+                                    case 3: // check bal
                                         System.out.println();
                                         System.out.println("Your Current Balance Is: " + connectDB.getBal(accountName));
                                         System.out.print("Do you want another transaction? [Y][N]: ");
                                         trnprmpt = scanner.next().charAt(0);
                                         loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
                                         break;
-                                    case 4:
+                                    case 4: //transfer
                                         System.out.println();
                                         System.out.print("Input Receiver Name: ");
-                                        String receiverName = scanner.next();
+                                        String receiverName = scanner.nextLine();
                                         System.out.print("Input Amount: ");
                                         amount = scanner.nextInt();
                                         allowed = false;
                                         allowed = isAllowed(connectDB, scanner, accountName, allowed);
                                         if (allowed) {
-                                            connectDB.transfer(accountName, receiverName, amount);
-                                            System.out.println("You Have Successfully transferred amount of: " +
-                                                    amount +
-                                                    " Onto " +
-                                                    receiverName + "'s Wallet.");
-                                            System.out.println("Your new balance: " + connectDB.getBal(accountName));
-                                            System.out.print("Do you want another transaction? [Y][N]: ");
-                                            trnprmpt = scanner.next().charAt(0);
-                                            loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
-                                        }else {
-                                            System.out.println("Too many failed attempts. Transfer Denied.");
-                                        }
+                                            if (connectDB.transfer(accountName, receiverName, amount)) {
+                                                System.out.println("You Have Successfully transferred amount of: " +
+                                                        amount +
+                                                        " Onto " +
+                                                        receiverName + "'s Wallet.");
+                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.print("Do you want another transaction? [Y][N]: ");
+                                                trnprmpt = scanner.next().charAt(0);
+                                                loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
+                                            } else { System.out.println("Transfer denied, no changes made."); }
+                                        }else { System.out.println("Too many failed attempts. Transfer Denied."); }
                                         break;
                                     case 5:
+                                        System.out.println();
+                                        System.out.println("Are you sure you want to delete your RBS Account?");
+                                        System.out.print("Input account name to continue: ");
+                                        String usr =  scanner.nextLine();
+                                        if (connectDB.deleteClient(usr)){
+                                            System.out.println("Thanks for using RBS! Happy to Serve you!");
+                                        } else { System.out.println("Delete Failed! No Changes Made."); }
+                                    case 6:
                                         loggedIn = false;
+                                        break;
+                                    default:
+                                        System.out.println("Invalid Choice!");
                                         break;
                                 }
                             }
@@ -148,7 +160,7 @@ public class Main {
                         System.out.println("== No Account Found! ==");
                     }
                     break;
-                case 2:
+                case 2: // register
                     System.out.println();
                     System.out.println("ReliableBankingSystem | Register");
                     System.out.print("Desired username: ");
@@ -161,13 +173,13 @@ public class Main {
                         System.out.print("Desired pin: ");
                         pin = scanner.nextInt();
                     }
-                    if (connectDB.addClient(username, pin, 0.0)) {
+                    if (connectDB.addClient(username.toLowerCase(), pin, 0.0)) {
                         System.out.println("Register Complete! Thank you for Joining!");
                     } else {
-                        System.out.println("Failed to register :(");
+                        System.out.println("Failed to register. No user created.");
                     }
                     break;
-                case 3:
+                case 3: // exit
                     System.out.println();
                     System.out.println("Thank you for using ReliableBankingSystem!");
                     isActive = false;

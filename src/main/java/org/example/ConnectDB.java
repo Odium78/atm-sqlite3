@@ -6,6 +6,7 @@ import java.sql.SQLException;
 public class ConnectDB {
     private Connection connection;
 
+    // client/user handling
     public boolean addClient(String username, int pin, double money) {
         String sql = "INSERT INTO clients(username, pin, money) VALUES(?, ?, ?)"; // add username pin money to table with values
         try (var pstmt = connection.prepareStatement(sql)) {
@@ -20,75 +21,99 @@ public class ConnectDB {
         }
     }
 
-    public void transfer(String sender, String receiver, double money) {
-        if (money <= 0) { System.out.println("Amount must be greater than 0."); }
+    public boolean deleteClient(String username) {
+        String sql = "DELETE FROM clients WHERE username = ?";
+        try (var pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            int rowsAffected = pstmt.executeUpdate();
 
-        Double fromBalance = getBal(sender);
-        Double toBalance = getBal(receiver);
-
-        // error checks first
-        if (fromBalance == null) { System.out.println("== Error! Sender account not found =="); }
-        if (toBalance == null) { System.out.println("== Error! Receiver account not found =="); }
-        if (fromBalance < money) { System.out.println("== Error! Insufficient funds =="); }
-
-        String withdrawSql = "UPDATE clients SET money = money - ? WHERE username = ?";
-        String depositSql = "UPDATE clients SET money = money + ? WHERE username = ?";
-
-        try {
-            connection.setAutoCommit(false); // dont update table content yet incase inconsistent
-            try (var withdrawStmt = connection.prepareStatement(withdrawSql);
-                 var depositStmt = connection.prepareStatement(depositSql)) {
-
-                withdrawStmt.setDouble(1, money);
-                withdrawStmt.setString(2, sender);
-                withdrawStmt.executeUpdate();
-
-                depositStmt.setDouble(1, money);
-                depositStmt.setString(2, receiver);
-                depositStmt.executeUpdate();
-
-                connection.commit();
-            } catch (SQLException e) {
-                connection.rollback();
-                System.out.println("Error during transfer" + e.getMessage()); //safety
-            } finally {
-                connection.setAutoCommit(true); // restore default
+            if (rowsAffected > 0) { // is username exist?
+                System.out.println("Client '" + username + "' deleted successfully.");
+                return true;
+            } else {
+                System.out.println("No client found with username: " + username);
+                return false;
             }
         } catch (SQLException e) {
-            System.out.println("Transaction error: " + e.getMessage());
+            System.out.println("Error deleting client: " + e.getMessage());
+            return false;
         }
     }
 
-    public void deposit(String username, double amount) {
+    // money handling
+    public boolean transfer(String fromUser, String toUser, double amount) {
+        String withdrawSql = "UPDATE clients SET money = money - ? WHERE username = ? AND money >= ?";
+        String depositSql = "UPDATE clients SET money = money + ? WHERE username = ?";
+
+        try {
+            connection.setAutoCommit(false); // start transaction
+
+            // Withdraw from sender
+            try (var withdrawStmt = connection.prepareStatement(withdrawSql)) {
+                withdrawStmt.setDouble(1, amount);
+                withdrawStmt.setString(2, fromUser);
+                withdrawStmt.setDouble(3, amount);
+                int rowsWithdrawn = withdrawStmt.executeUpdate();
+                if (rowsWithdrawn == 0) {
+                    connection.rollback();
+                    System.out.println("Insufficient Balance!");
+                    return false; // not enough funds
+                }
+            }
+
+            // 2. Deposit to recipient
+            try (var depositStmt = connection.prepareStatement(depositSql)) {
+                depositStmt.setDouble(1, amount);
+                depositStmt.setString(2, toUser);
+                int rowsDeposited = depositStmt.executeUpdate();
+                if (rowsDeposited == 0) {
+                    connection.rollback();
+                    System.out.println("Receiver with name \"" + toUser + "\" does not exist!");
+                    return false; // recipient not found
+                }
+            }
+
+            connection.commit();
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error during transfer: " + e.getMessage());
+            try { connection.rollback(); } catch (Exception ignored) {}
+            return false;
+        } finally {
+            try { connection.setAutoCommit(true); } catch (Exception ignored) {} // roll back set commits to true again
+        }
+    }
+
+    public boolean deposit(String username, double amount) {
         String sql = "UPDATE clients SET money = money + ? WHERE username = ?";
         try (var pstmt = connection.prepareStatement(sql)) {
             pstmt.setDouble(1, amount);
             pstmt.setString(2, username);
             int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-            } else {
-            }
+            return rowsAffected > 0; // return true if deposit worked
         } catch (Exception e) {
             System.out.println("Error during deposit: " + e.getMessage());
+            return false;
         }
     }
 
-    public void withdraw(String username, double amount) {
-        if (amount <= 0 && amount % 100 == 0) { System.out.println("Amount must be divisible by 100"); }
-        Double balance = getBal(username);
-
-        if (balance == null) { System.out.println("Client not found."); }
-        if (balance < amount) { System.out.println("Insufficient funds. Current balance: " + balance); }
-        String sql = "UPDATE clients SET money = money - ? WHERE username = ?";
-
+    public boolean withdraw(String username, double amount) {
+        String sql = "UPDATE clients SET money = money - ? WHERE username = ? AND money >= ?";
         try (var pstmt = connection.prepareStatement(sql)) {
             pstmt.setDouble(1, amount);
             pstmt.setString(2, username);
+            pstmt.setDouble(3, amount);
             int rowsAffected = pstmt.executeUpdate();
 
-            if (rowsAffected < 0) { System.out.println("No client found with username: " + username); }
-        } catch (SQLException e) {
-            System.out.println("Error with withdrawal: " + e.getMessage());
+            if (rowsAffected > 0) { return true; }
+            else {
+                System.out.println("Insufficient Balance");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("Error during withdrawal: " + e.getMessage());
+            return false;
         }
     }
 
@@ -152,10 +177,6 @@ public class ConnectDB {
         }
     }
 
-    public Connection getConnection() {
-        return connection;
-    }
-
     public void closeConnection() {
         try {
             if (connection != null) {
@@ -168,31 +189,5 @@ public class ConnectDB {
         }
     }
 
-
-
-    // FOR DEBUGGING PURPOSES, DO NOT USE ON PRODUCT
-    public void clrclnt() {
-        String sql = "DELETE FROM clients";
-        try (var stmt = connection.createStatement()) {
-            stmt.executeUpdate(sql);
-            System.out.println("All clients removed.");
-        } catch (SQLException e) {
-            System.out.println("Error deleting clients: " + e.getMessage());
-        }
-    }
-
-    public void mktbl() {
-        String sql = "CREATE TABLE IF NOT EXISTS clients (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "username TEXT NOT NULL UNIQUE," +
-                "pin TEXT NOT NULL CHECK(length(pin) = 4 AND pin GLOB '[0-9]*')," +
-                "money REAL DEFAULT 0" +
-                ");";
-        try (var stmt = connection.createStatement()) {
-            stmt.execute(sql);
-            System.out.println("Table 'clients' created or already exists.");
-        } catch (Exception e) {
-            System.out.println("Error creating table: " + e.getMessage());
-        }
-    }
+    public Connection getConnection() { return connection; }
 }
