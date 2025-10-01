@@ -4,31 +4,14 @@
 // Compiled via JDK 21 Temurin LTS
 
 package org.example;
-// import java.sql.Connection;
 import java.util.Scanner;
 
 public class Main {
-    // since the pin is repeated make it a function for cleaner code
-    private static boolean isAllowed(ConnectDB connectDB, Scanner scanner, String accountName, boolean allowed) {
-        for (int i = 1; i <= 3; i++) {
-            System.out.print("Input Pin: ");
-            int accPin = scanner.nextInt();
-            if (!connectDB.authClient(accountName, String.valueOf(accPin))) {
-                System.out.println("== Wrong pin, try again! ==");
-            } else {
-                allowed = true;
-                break;
-            }
-        }
-        return allowed;
-    }
-
     public static void main(String[] args) {
         //init required data
         boolean isActive = true;
         boolean allowed;
-        ConnectDB connectDB = new ConnectDB();
-        // Connection connection = connectDB.getConnection();
+        Database db = new Database();
         Scanner scanner = new Scanner(System.in);
         int prmpt; // prompt for welcome page
         double amount;
@@ -50,9 +33,9 @@ public class Main {
                     System.out.print("Input Account Name: ");
                     String accountNameDef = scanner.nextLine();
                     String accountName = accountNameDef.toLowerCase();
-                    if (connectDB.findClient(accountName)) {
+                    if (db.findClient(accountName)) {
                         boolean loggedIn = false;
-                        loggedIn = isAllowed(connectDB, scanner, accountName, loggedIn);
+                        loggedIn = isAllowed(db, scanner, accountName, loggedIn);
                         if (loggedIn) {
                             // Main ATM Program
                             while (loggedIn) {
@@ -75,18 +58,16 @@ public class Main {
                                         System.out.println("Withdrawal (must be divisible by 100)");
                                         System.out.print("Enter Amount: ");
                                         amount = scanner.nextDouble();
-
                                         if (amount <= 0 || amount % 100 != 0) {
                                             System.out.println("Amount must be greater than 0 and divisible by 100!");
                                             break;
                                         }
-
                                         allowed = false;
-                                        allowed = isAllowed(connectDB, scanner, accountName, allowed);
+                                        allowed = isAllowed(db, scanner, accountName, allowed);
                                         if (allowed) {
-                                            if (connectDB.withdraw(accountName, amount)) {
+                                            if (db.withdraw(accountName, amount)) {
                                                 System.out.println("You have successfully withdrawn amount of: " + amount);
-                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.println("Your new balance: " + db.getBal(accountName));
                                                 System.out.print("Do you want another transaction? [Y][N]: ");
                                                 trnprmpt = scanner.next().charAt(0);
                                                 loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
@@ -99,12 +80,12 @@ public class Main {
                                         System.out.print("Enter Amount: ");
                                         amount = scanner.nextDouble();
                                         allowed = false;
-                                        allowed = isAllowed(connectDB, scanner, accountName, allowed);
+                                        allowed = isAllowed(db, scanner, accountName, allowed);
 
                                         if (allowed) {
-                                            if (connectDB.deposit(accountName, amount)) {
+                                            if (db.deposit(accountName, amount)) {
                                                 System.out.println("You have successfully deposited amount of: " + amount);
-                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.println("Your new balance: " + db.getBal(accountName));
                                                 System.out.print("Do you want another transaction? [Y][N]: ");
                                                 trnprmpt = scanner.next().charAt(0);
                                                 loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
@@ -113,7 +94,7 @@ public class Main {
                                         break;
                                     case 3: // check bal
                                         System.out.println();
-                                        System.out.println("Your Current Balance Is: " + connectDB.getBal(accountName));
+                                        System.out.println("Your Current Balance Is: " + db.getBal(accountName));
                                         System.out.print("Do you want another transaction? [Y][N]: ");
                                         trnprmpt = scanner.next().charAt(0);
                                         loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
@@ -125,14 +106,14 @@ public class Main {
                                         System.out.print("Input Amount: ");
                                         amount = scanner.nextInt();
                                         allowed = false;
-                                        allowed = isAllowed(connectDB, scanner, accountName, allowed);
+                                        allowed = isAllowed(db, scanner, accountName, allowed);
                                         if (allowed) {
-                                            if (connectDB.transfer(accountName, receiverName, amount)) {
+                                            if (db.transfer(accountName, receiverName, amount)) {
                                                 System.out.println("You Have Successfully transferred amount of: " +
                                                         amount +
                                                         " Onto " +
                                                         receiverName + "'s Wallet.");
-                                                System.out.println("Your new balance: " + connectDB.getBal(accountName));
+                                                System.out.println("Your new balance: " + db.getBal(accountName));
                                                 System.out.print("Do you want another transaction? [Y][N]: ");
                                                 trnprmpt = scanner.next().charAt(0);
                                                 loggedIn = trnprmpt == 'y' || trnprmpt == 'Y';
@@ -144,7 +125,7 @@ public class Main {
                                         System.out.println("Are you sure you want to delete your RBS Account?");
                                         System.out.print("Input account name to continue: ");
                                         String usr =  scanner.nextLine();
-                                        if (connectDB.deleteClient(usr)){
+                                        if (db.deleteClient(usr)){
                                             System.out.println("Thanks for using RBS! Happy to Serve you!");
                                         } else { System.out.println("Delete Failed! No Changes Made."); }
                                     case 6:
@@ -175,7 +156,7 @@ public class Main {
                         System.out.print("Desired pin: ");
                         pin = scanner.nextInt();
                     }
-                    if (connectDB.addClient(username.toLowerCase(), pin, 0.0)) {
+                    if (db.addClient(username.toLowerCase(), pin, 0.0)) {
                         System.out.println("Register Complete! Thank you for Joining!");
                     } else {
                         System.out.println("Failed to register. No user created.");
@@ -193,6 +174,21 @@ public class Main {
         }
 
         scanner.close();
-        connectDB.closeConnection();
+        db.closeConnection();
+    }
+
+    // since the pin is repeated make it a function for cleaner code
+    private static boolean isAllowed(Database db, Scanner scanner, String accountName, boolean allowed) {
+        for (int i = 1; i <= 3; i++) {
+            System.out.print("Input Pin: ");
+            int accPin = scanner.nextInt();
+            if (!db.authClient(accountName, String.valueOf(accPin))) {
+                System.out.println("== Wrong pin, try again! ==");
+            } else {
+                allowed = true;
+                break;
+            }
+        }
+        return allowed;
     }
 }
