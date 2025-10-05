@@ -25,9 +25,9 @@ public class Main {
             System.out.print("Select an option: ");
             prmpt = scanner.nextInt();
 
-            scanner.nextLine();
             switch(prmpt) {
                 case 1: // login
+                    scanner.nextLine();
                     System.out.println();
                     System.out.println("ReliableBankingSystem | Login");
                     System.out.print("Input Account Name: ");
@@ -144,13 +144,14 @@ public class Main {
                     }
                     break;
                 case 2: // register
+                    scanner.nextLine();
                     System.out.println();
                     System.out.println("ReliableBankingSystem | Register");
                     System.out.print("Desired username: ");
                     String username = scanner.next();
                     System.out.print("Desired pin: ");
                     int pin = scanner.nextInt();
-                    while (!(pin >= 1000 && pin <= 9999))
+                    while (!(pin >= 1000 && pin <= 9999)) // check if 4 digits
                     {
                         System.out.println("== Invalid PIN. Must be exactly 4 digits. ==");
                         System.out.print("Desired pin: ");
@@ -163,6 +164,7 @@ public class Main {
                     }
                     break;
                 case 3: // exit
+                    scanner.nextLine();
                     System.out.println();
                     System.out.println("Thank you for using ReliableBankingSystem!");
                     isActive = false;
