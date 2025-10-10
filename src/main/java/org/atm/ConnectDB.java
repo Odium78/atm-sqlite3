@@ -1,7 +1,6 @@
-package org.example;
+package org.atm;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 
 public class ConnectDB {
     private Connection connection;
