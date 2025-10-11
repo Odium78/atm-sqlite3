@@ -35,19 +35,19 @@ public class Main {
                                 switch (choice) {
                                     case 1: // withdrawal
                                         withdrawal(scanner, accountName, db);
-                                        loggedIn = readYesNo(scanner, "\nDo you want another transaction? [Y][N]: ");
+                                        loggedIn = readYesNo(scanner);
                                         break;
                                     case 2: // deposit
                                         deposit(scanner, accountName, db);
-                                        loggedIn = readYesNo(scanner, "\nDo you want another transaction? [Y][N]: ");
+                                        loggedIn = readYesNo(scanner);
                                         break;
                                     case 3: // check balance
                                         checkBalance(accountName, db);
-                                        loggedIn = readYesNo(scanner, "\nDo you want another transaction? [Y][N]: ");
+                                        loggedIn = readYesNo(scanner);
                                         break;
                                     case 4: // transfer
                                         transferMoney(scanner, accountName, db);
-                                        loggedIn = readYesNo(scanner, "\nDo you want another transaction? [Y][N]: ");
+                                        loggedIn = readYesNo(scanner);
                                         break;
                                     case 5: // delete account
                                         loggedIn = deleteAccount(scanner, db, accountName);
@@ -88,7 +88,7 @@ public class Main {
         db.closeConnection();
     }
 
-    // ---------- Input helpers ----------
+    // input parsers
     private static String readNonEmptyLine(Scanner scanner) {
         String line;
         do {
@@ -116,9 +116,9 @@ public class Main {
         }
     }
 
-    private static boolean readYesNo(Scanner scanner, String prompt) {
+    private static boolean readYesNo(Scanner scanner) {
         while (true) {
-            System.out.print(prompt);
+            System.out.print("\nDo you want another transaction? [Y][N]: ");
             String line = scanner.nextLine();
             if (line == null || line.trim().isEmpty()) {
                 System.out.println("Invalid Option!");
@@ -131,7 +131,7 @@ public class Main {
         }
     }
 
-    // ---------- Authentication ----------
+    // pin tries
     private static boolean isAllowed(Database db, Scanner scanner, String accountName) {
         for (int i = 1; i <= 3; i++) {
             System.out.print("Input Pin (Max 3 Tries): ");
@@ -149,12 +149,18 @@ public class Main {
         return false;
     }
 
-    // ---------- ATM operations ----------
+    // atm functions
     private static void withdrawal(Scanner scanner, String accountName, Database db) {
         System.out.println();
         System.out.println("Withdrawal (must be divisible by 100)");
         System.out.print("Enter Amount: ");
         double amount = readDouble(scanner);
+
+        if (amount >= 50000) {
+            System.out.println("Basic Accounts Cannot Deposit More Than 50,000!");
+            return;
+        }
+
         if (Double.isNaN(amount)) {
             System.out.println("Invalid Amount!");
             return;
@@ -181,6 +187,12 @@ public class Main {
         System.out.println("Deposit");
         System.out.print("Enter Amount: ");
         double amount = readDouble(scanner);
+
+        if (amount >= 50000) {
+            System.out.println("Basic Accounts Cannot Deposit More Than 50,000!");
+            return;
+        }
+
         if (Double.isNaN(amount)) {
             System.out.println("Invalid Amount!");
             return;
@@ -211,7 +223,13 @@ public class Main {
         System.out.print("Input Receiver Name: ");
         String receiverName = readNonEmptyLine(scanner);
         System.out.print("Input Amount: ");
+
         double amount = readDouble(scanner);
+
+        if (amount >= 50000) {
+            System.out.println("Basic Accounts Cannot Deposit More Than 50,000!");
+            return;
+        }
         if (Double.isNaN(amount) || amount <= 0) {
             System.out.println("Invalid Amount!");
             return;
@@ -246,7 +264,7 @@ public class Main {
         }
     }
 
-    // ---------- Registration & menu ----------
+    // login & register menu
     private static void registerUser(Scanner scanner, Database db) {
         System.out.println();
         System.out.println("ReliableBankingSystem | Register");
